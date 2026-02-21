@@ -15,21 +15,24 @@ if uploaded_file is not None:
         reader = PdfReader(uploaded_file)
         text = ""
         for page in reader.pages:
-            text += page.extract_text()
+            extracted = page.extract_text()
+            if extracted:
+                text += extracted
 
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        # Configure Gemini
+        api_key = os.getenv("GEMINI_API_KEY")
+        genai.configure(api_key=api_key)
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
         prompt = f"""
-        Extract the following details from this invoice text:
+        Extract the following details from this invoice text and return ONLY valid JSON:
+
         - Vendor Name
         - Invoice Number
         - Invoice Date
         - Total Amount
         - Tax Amount (if available)
-
-        Return output in JSON format.
 
         Invoice Text:
         {text}
