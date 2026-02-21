@@ -23,7 +23,7 @@ if uploaded_file is not None:
         api_key = os.getenv("GEMINI_API_KEY")
         genai.configure(api_key=api_key)
 
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
 
         prompt = f"""
         Extract the following details from this invoice text and return ONLY valid JSON:
