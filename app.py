@@ -54,14 +54,17 @@ if uploaded_file is not None:
             ]
         }
 
-        response = requests.post(url, headers=headers, json=data)
+      response = requests.post(url, headers=headers, json=data)
 
-        result = response.json()
+      result = response.json()
 
+      if response.status_code != 200:
+      output = f"API Error: {result}" 
+      else:
         try:
             output = result["candidates"][0]["content"]["parts"][0]["text"]
-        except:
-            output = "Error extracting data. Check API key or model."
+        except Exception as e:
+            output = f"Parsing Error: {result}"
 
         st.success("✅ Invoice Processed Successfully!")
         st.subheader("📄 Extracted Data")
