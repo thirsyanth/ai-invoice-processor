@@ -1,11 +1,11 @@
 import streamlit as st
 import os
+import google.generativeai as genai
 from PyPDF2 import PdfReader
-from openai import OpenAI
 
 st.set_page_config(page_title="AI Invoice Processor", layout="wide")
 
-st.title("🤖 AI Invoice Processor")
+st.title("🤖 AI Invoice Processor (Gemini Powered)")
 st.markdown("Upload an invoice PDF and let AI extract key details automatically.")
 
 uploaded_file = st.file_uploader("Upload Invoice PDF", type="pdf")
@@ -17,7 +17,9 @@ if uploaded_file is not None:
         for page in reader.pages:
             text += page.extract_text()
 
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+        model = genai.GenerativeModel("gemini-1.5-flash")
 
         prompt = f"""
         Extract the following details from this invoice text:
@@ -33,16 +35,8 @@ if uploaded_file is not None:
         {text}
         """
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are an invoice data extraction assistant."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-
-        result = response.choices[0].message.content
+        response = model.generate_content(prompt)
 
         st.success("✅ Invoice Processed Successfully!")
         st.subheader("📄 Extracted Data")
-        st.code(result, language="json")
+        st.code(response.text, language="json")
