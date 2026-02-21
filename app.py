@@ -13,7 +13,7 @@ uploaded_file = st.file_uploader("Upload Invoice PDF", type="pdf")
 if uploaded_file is not None:
     with st.spinner("Processing invoice..."):
 
-        # Extract PDF text
+        # Extract text from PDF
         reader = PdfReader(uploaded_file)
         text = ""
         for page in reader.pages:
@@ -21,10 +21,9 @@ if uploaded_file is not None:
             if extracted:
                 text += extracted
 
-        # Get Gemini API Key
+        # Get API key from Streamlit Secrets
         api_key = os.getenv("GEMINI_API_KEY")
 
-        # Gemini REST API Endpoint
         url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
 
         headers = {
@@ -32,17 +31,17 @@ if uploaded_file is not None:
         }
 
         prompt = f"""
-        Extract the following details from this invoice text and return ONLY valid JSON:
+Extract the following details from this invoice text and return ONLY valid JSON:
 
-        - Vendor Name
-        - Invoice Number
-        - Invoice Date
-        - Total Amount
-        - Tax Amount (if available)
+- Vendor Name
+- Invoice Number
+- Invoice Date
+- Total Amount
+- Tax Amount (if available)
 
-        Invoice Text:
-        {text}
-        """
+Invoice Text:
+{text}
+"""
 
         data = {
             "contents": [
@@ -54,17 +53,16 @@ if uploaded_file is not None:
             ]
         }
 
-      response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data)
+        result = response.json()
 
-      result = response.json()
-
-      if response.status_code != 200:
-      output = f"API Error: {result}" 
-      else:
-        try:
-            output = result["candidates"][0]["content"]["parts"][0]["text"]
-        except Exception as e:
-            output = f"Parsing Error: {result}"
+        if response.status_code != 200:
+            output = f"API Error: {result}"
+        else:
+            try:
+                output = result["candidates"][0]["content"]["parts"][0]["text"]
+            except:
+                output = f"Parsing Error: {result}"
 
         st.success("✅ Invoice Processed Successfully!")
         st.subheader("📄 Extracted Data")
