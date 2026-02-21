@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-import google.generativeai as genai
+import requests
 from PyPDF2 import PdfReader
 
 st.set_page_config(page_title="AI Invoice Processor", layout="wide")
@@ -12,6 +12,8 @@ uploaded_file = st.file_uploader("Upload Invoice PDF", type="pdf")
 
 if uploaded_file is not None:
     with st.spinner("Processing invoice..."):
+
+        # Extract PDF text
         reader = PdfReader(uploaded_file)
         text = ""
         for page in reader.pages:
@@ -19,11 +21,15 @@ if uploaded_file is not None:
             if extracted:
                 text += extracted
 
-        # Configure Gemini
+        # Get Gemini API Key
         api_key = os.getenv("GEMINI_API_KEY")
-        genai.configure(api_key=api_key)
 
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        # Gemini REST API Endpoint
+        url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+
+        headers = {
+            "Content-Type": "application/json"
+        }
 
         prompt = f"""
         Extract the following details from this invoice text and return ONLY valid JSON:
@@ -38,8 +44,25 @@ if uploaded_file is not None:
         {text}
         """
 
-        response = model.generate_content(prompt)
+        data = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt}
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(url, headers=headers, json=data)
+
+        result = response.json()
+
+        try:
+            output = result["candidates"][0]["content"]["parts"][0]["text"]
+        except:
+            output = "Error extracting data. Check API key or model."
 
         st.success("✅ Invoice Processed Successfully!")
         st.subheader("📄 Extracted Data")
-        st.code(response.text, language="json")
+        st.code(output, language="json")
